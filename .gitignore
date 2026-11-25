@@ -1,0 +1,17 @@
+# Compiled binaries & build logs
+*.dll
+*.pdb
+*.exe
+build.log
+
+# Packaged release zips & local staging/covers
+*.zip
+release/
+
+# User data & IDE files
+ParaFaceLab.data/
+.vs/
+*.user
+*.suo
+.DS_Store
+Thumbs.db

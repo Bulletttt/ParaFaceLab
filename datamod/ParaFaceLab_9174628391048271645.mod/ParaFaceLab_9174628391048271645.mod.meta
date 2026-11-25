@@ -1,0 +1,13 @@
+GUID:9174628391048271645
+Type:401
+ModName:ParaFaceLab 捏脸工坊
+Enabled:True
+IsSystemMod:False
+CreationTime:639312000000000000
+LastEditTime:639312000000000000
+LastUploadTime:0
+IsFromWorkshop:False
+PublishedFileId:0
+CreatorId:
+WorkshopUserTags:
+WorkshopDescription:高自由度面部/身材骨骼精修、原版超限拉杆、50步撤回与捏脸预设工具（游戏内按 F9 呼出；需搭配 BepInEx 插件 ParaFaceLab.dll，可在此开关启用/停用）。
