@@ -3,7 +3,7 @@
 A lightweight, in-game face & body sculpting panel for **Paralives** (tested on Patch 0.1.10).  
 一款轻量级的 **Paralives（平行人生）** 游戏内捏脸与身材精修工具（已适配 Patch 0.1.10）。
 
-- **Download / 下载**：[GitHub Releases](../../releases) | [Nexus Mods](https://www.nexusmods.com/games/paralives/mods/422)
+- **Download / 下载**：[GitHub Releases](https://github.com/Bulletttt/ParaFaceLab/releases) | [Nexus Mods](https://www.nexusmods.com/paralives/mods/422)
 - **Languages / 支持语言**：English / 简体中文 / 繁體中文 / 日本語 / 한국어（自动跟随游戏语言，顶栏可实时切换）
 
 ---
@@ -37,7 +37,7 @@ A lightweight, in-game face & body sculpting panel for **Paralives** (tested on 
 
 ## Installation / 安装方法
 
-1. Download `ParaFaceLab_v1.2.2.zip` from [Releases](../../releases) and extract it.
+1. Download `ParaFaceLab_v1.2.2.zip` from [Releases](https://github.com/Bulletttt/ParaFaceLab/releases) and extract it.
 2. Copy `BepInEx/plugins/ParaFaceLab.dll` into `<Paralives Game Folder>/BepInEx/plugins/`.
 3. *(Optional)* Copy `Optional_OfficialModMenu/ParaFaceLab_9174628391048271645.mod` into `%USERPROFILE%\AppData\LocalLow\Paralives\Paralives\` to show ParaFaceLab as an On/Off toggle card in the official in-game Mods menu.
 4. Launch Paralives, enter Paramaker or Live Mode, and press **F9** to toggle the panel.
