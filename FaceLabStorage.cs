@@ -107,6 +107,7 @@ namespace ParaFaceLab
             if (guid == 0) return;
             DirtyGuids.Add(guid);
             _nextSaveAt = Time.unscaledTime + 0.6f; // 防抖 0.6 秒落盘，拖动拉杆零卡顿
+            FaceLabRuntime.NoteProfileEditedForThumbnail(guid);
         }
 
         public static void TickAutoSave()

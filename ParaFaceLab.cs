@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace ParaFaceLab
 {
-    [BepInPlugin("paralives.facelab", "ParaFaceLab", "1.2.2")]
+    [BepInPlugin("paralives.facelab", "ParaFaceLab", "1.3.0")]
     public partial class FaceLabPlugin : BaseUnityPlugin
     {
         public const ulong OFFICIAL_MOD_GUID = 9174628391048271645UL;
@@ -75,7 +75,7 @@ namespace ParaFaceLab
                 _harmony = new Harmony("paralives.facelab");
                 _harmony.PatchAll(typeof(FaceLabPlugin).Assembly);
                 FaceLabInputGuard.InstallInputSystemPatches(_harmony);
-                Logger.LogInfo("[ParaFaceLab] v1.2.2 loaded. Press " + (_hotkeyCfg != null ? _hotkeyCfg.Value.ToString() : "F9") + " to toggle.");
+                Logger.LogInfo("[ParaFaceLab] v1.3.0 loaded. Press " + (_hotkeyCfg != null ? _hotkeyCfg.Value.ToString() : "F9") + " to toggle.");
             }
             catch (Exception e)
             {
@@ -223,6 +223,8 @@ namespace ParaFaceLab
                 FaceLabRuntime.EndCompareOriginal();
                 FaceLabRuntime.TickPendingMeshRebuild(true);
                 FaceLabStorage.FlushAll();
+                if (!_inParamaker && _targetChar != null && FaceLabRuntime.ConsumeThumbRefreshPending(_targetChar.GUID))
+                    FaceLabRuntime.RequestThumbnailRefresh(_targetChar);
             }
         }
 

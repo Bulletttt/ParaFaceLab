@@ -1,6 +1,7 @@
-// FaceLabRuntime.cs —— v0.5 防累乘自恢复骨骼引擎 + 真正突破 0~1 上下限外推 + 零抖动写入 + 安全胸型切换
+// FaceLabRuntime.cs —— v1.3.0 防累乘自恢复骨骼引擎 + 拍照模式/缩略图全覆盖 + 突破 0~1 上下限外推
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 
@@ -46,6 +47,41 @@ namespace ParaFaceLab
         // key = CharacterVisual.GetInstanceID() -> (boneName -> BoneStateRec)
         private static readonly Dictionary<int, Dictionary<string, BoneStateRec>> VisualBoneStates
             = new Dictionary<int, Dictionary<string, BoneStateRec>>();
+
+        // key = CharacterVisual.GetInstanceID() -> last applied CharacterGUID
+        // 防止复用同一个 CharacterVisual 实例（如 CharacterThumbnailManager._visual）切换角色时串用基准态
+        private static readonly Dictionary<int, ulong> VisualLastGuid
+            = new Dictionary<int, ulong>();
+
+        private static readonly HashSet<ulong> ThumbRefreshPendingGuids = new HashSet<ulong>();
+
+        public static void NoteProfileEditedForThumbnail(ulong guid)
+        {
+            if (guid != 0UL) ThumbRefreshPendingGuids.Add(guid);
+        }
+
+        public static bool ConsumeThumbRefreshPending(ulong guid)
+        {
+            return guid != 0UL && ThumbRefreshPendingGuids.Remove(guid);
+        }
+
+        public static bool RequestThumbnailRefresh(AssetCharacter ch)
+        {
+            if (ch == null || ch.IsDummy || ch.GUID == 0UL) return false;
+            try
+            {
+                CharacterThumbnailManager tm = CharacterThumbnailManager.Instance;
+                if (tm == null) return false;
+                tm.CreateRequest(ch.GUID, 0UL, 0UL, 0UL);
+                ThumbRefreshPendingGuids.Remove(ch.GUID);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning("[ParaFaceLab] RequestThumbnailRefresh failed: " + e.Message);
+                return false;
+            }
+        }
 
         public static bool IsLimitUnlockedFor(AssetCharacter ch)
         {
@@ -679,8 +715,8 @@ namespace ParaFaceLab
                 || boneName.StartsWith("Bottom", StringComparison.OrdinalIgnoreCase);
         }
 
-        // 恢复某视觉实例所有曾被我们修改过的骨骼（当精修关闭/归零/对比原版/退出时立刻无痕复原）
-        private static void RestoreAllTrackedBones(int visId)
+        // 恢复某视觉实例所有曾被我们修改过的骨骼（当精修关闭/归零/对比原版/缩略图拍完/退出时立刻无痕复原）
+        internal static void RestoreAllTrackedBones(int visId)
         {
             Dictionary<string, BoneStateRec> recs;
             if (!VisualBoneStates.TryGetValue(visId, out recs) || recs == null || recs.Count == 0) return;
@@ -724,6 +760,7 @@ namespace ParaFaceLab
             for (int i = 0; i < keys.Count; i++)
                 RestoreAllTrackedBones(keys[i]);
             VisualBoneStates.Clear();
+            VisualLastGuid.Clear();
         }
 
         public static void ApplyAllLoadedVisuals()
@@ -733,6 +770,64 @@ namespace ParaFaceLab
 
             AppliedVisualIds.Clear();
 
+            // 1) 游戏自身参与骨骼变形的所有视觉实例（含生活模式、捏人界面、拍照模式分身、缩略图相机模型等）
+            try
+            {
+                List<CharacterVisual> deformList = cm.CharactersToDeformBones;
+                if (deformList != null)
+                {
+                    for (int i = 0; i < deformList.Count; i++)
+                    {
+                        CharacterVisual vis = deformList[i];
+                        if (vis == null) continue;
+                        ulong g = vis.CharacterGUID;
+                        if (g == 0UL) continue;
+                        int id = vis.GetInstanceID();
+                        if (!AppliedVisualIds.Add(id)) continue;
+                        ApplyOrRestoreVisual(g, vis, id);
+                    }
+                }
+            }
+            catch { }
+
+            // 2) 拍照模式克隆角色与临时加入拍照模式的角色（兜底保障首帧及所有切换姿态帧不脱妆）
+            try
+            {
+                if (cm.PhotoModeDuplicatedCharacterVisuals != null)
+                {
+                    foreach (var kv in cm.PhotoModeDuplicatedCharacterVisuals)
+                    {
+                        CharacterVisual vis = kv.Value;
+                        if (vis == null) continue;
+                        ulong g = kv.Key != 0UL ? kv.Key : vis.CharacterGUID;
+                        if (g == 0UL) continue;
+                        int id = vis.GetInstanceID();
+                        if (!AppliedVisualIds.Add(id)) continue;
+                        ApplyOrRestoreVisual(g, vis, id);
+                    }
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (cm.PhotoModeTemporaryAddedCharacterVisuals != null)
+                {
+                    foreach (var kv in cm.PhotoModeTemporaryAddedCharacterVisuals)
+                    {
+                        CharacterVisual vis = kv.Value;
+                        if (vis == null) continue;
+                        ulong g = kv.Key != 0UL ? kv.Key : vis.CharacterGUID;
+                        if (g == 0UL) continue;
+                        int id = vis.GetInstanceID();
+                        if (!AppliedVisualIds.Add(id)) continue;
+                        ApplyOrRestoreVisual(g, vis, id);
+                    }
+                }
+            }
+            catch { }
+
+            // 3) 生活模式已加载角色视觉
             if (cm.LoadedCharacterVisuals != null)
             {
                 foreach (var kv in cm.LoadedCharacterVisuals)
@@ -745,6 +840,7 @@ namespace ParaFaceLab
                 }
             }
 
+            // 4) 捏人界面正在编辑的角色视觉
             try
             {
                 List<AssetCharacter> chars = cm.Characters;
@@ -800,14 +896,26 @@ namespace ParaFaceLab
                 }
                 if (dead != null)
                 {
-                    for (int i = 0; i < dead.Count; i++) VisualBoneStates.Remove(dead[i]);
+                    for (int i = 0; i < dead.Count; i++)
+                    {
+                        VisualBoneStates.Remove(dead[i]);
+                        VisualLastGuid.Remove(dead[i]);
+                    }
                 }
             }
         }
 
-        private static void ApplyOrRestoreVisual(ulong guid, CharacterVisual visual, int visId)
+        internal static void ApplyOrRestoreVisual(ulong guid, CharacterVisual visual, int visId)
         {
             if (visual == null) return;
+
+            // 若同一 CharacterVisual 被复用到不同角色（例如缩略图相机的共享 _visual），先彻底复原并清空旧角色记录
+            ulong prevGuid;
+            if (VisualLastGuid.TryGetValue(visId, out prevGuid) && prevGuid != guid)
+            {
+                RestoreAllTrackedBones(visId);
+            }
+            VisualLastGuid[visId] = guid;
 
             FaceProfile profile = FaceLabStorage.TryGetProfile(guid);
             bool shouldApply = FaceLabPlugin.OfficialModEnabled
@@ -1019,6 +1127,56 @@ namespace ParaFaceLab
         private static void Postfix()
         {
             try { FaceLabRuntime.ApplyAllLoadedVisuals(); }
+            catch { }
+        }
+    }
+
+    // 人物缩略图拍照瞬间（CharacterThumbnailManager.CaptureThumbnail 运行于 Update 阶段）：
+    // 拍照前确保该角色的骨骼精修已精确就位（防 Update 阶段被重置或尚未走 LateUpdate），
+    // 拍照完成后立即无痕复原共享缩略图模型，绝不污染下一个角色或服装图标！
+    [HarmonyPatch(typeof(CharacterThumbnailManager), "CaptureThumbnail")]
+    internal static class FaceLabThumbnailCapturePatch
+    {
+        private static FieldInfo _fiThumbVisual;
+        private static bool _fiChecked = false;
+
+        private static CharacterVisual GetThumbVisual(CharacterThumbnailManager mgr)
+        {
+            if (mgr == null) return null;
+            if (!_fiChecked)
+            {
+                _fiChecked = true;
+                _fiThumbVisual = typeof(CharacterThumbnailManager).GetField("_visual",
+                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+            }
+            return _fiThumbVisual != null ? (_fiThumbVisual.GetValue(mgr) as CharacterVisual) : null;
+        }
+
+        private static void Prefix(CharacterThumbnailManager __instance, CharacterThumbnailCreationRequest request, out CharacterVisual __state)
+        {
+            __state = null;
+            try
+            {
+                if (!FaceLabPlugin.OfficialModEnabled || __instance == null || request == null) return;
+                // 仅对真实人物头像/造型生效，不干扰服装/预设商店图鉴假人
+                if (request.EquipmentGUID != 0UL || request.PresetGUID != 0UL) return;
+                if (request.CharacterAssetGUID == 0UL) return;
+
+                CharacterVisual vis = GetThumbVisual(__instance);
+                if (vis == null) return;
+                __state = vis;
+                FaceLabRuntime.ApplyOrRestoreVisual(request.CharacterAssetGUID, vis, vis.GetInstanceID());
+            }
+            catch { }
+        }
+
+        private static void Postfix(CharacterVisual __state)
+        {
+            try
+            {
+                if (__state != null)
+                    FaceLabRuntime.RestoreAllTrackedBones(__state.GetInstanceID());
+            }
             catch { }
         }
     }

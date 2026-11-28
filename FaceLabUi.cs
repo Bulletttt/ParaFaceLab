@@ -401,7 +401,7 @@ namespace ParaFaceLab
             float dot = Mathf.Round(10f * sc);
             GUI.DrawTexture(new Rect(14f, (hdrH - dot) * 0.5f, dot, dot), _tThumb);
             float titleX = 14f + dot + 8f;
-            GUI.Label(new Rect(titleX, 0f, Mathf.Max(80f, xTheme - titleX - 6f), hdrH), "ParaFaceLab  v1.2.2", _sTitle);
+            GUI.Label(new Rect(titleX, 0f, Mathf.Max(80f, xTheme - titleX - 6f), hdrH), "ParaFaceLab  v1.3.0", _sTitle);
 
             // 皮肤切换
             string themeShort = T("th_" + _themeIdx + "_short");
@@ -1263,10 +1263,20 @@ namespace ParaFaceLab
             GUILayout.EndScrollView();
 
             GUILayout.Space(8f);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(T("refresh_thumb"), _sBtnSoft, GUILayout.Height(32f * sc)))
+            {
+                if (FaceLabRuntime.RequestThumbnailRefresh(_targetChar))
+                    ShowToast(T("toast_thumb_ok"));
+                else
+                    ShowToast(T("toast_thumb_fail"));
+            }
+            GUILayout.Space(6f);
             if (GUILayout.Button(T("open_dir"), _sBtn, GUILayout.Height(32f * sc)))
             {
                 try { Process.Start("explorer.exe", FaceLabStorage.RootDir); } catch { }
             }
+            GUILayout.EndHorizontal();
             GUILayout.Space(5f);
             GUILayout.Label(T("shift_tip"), _sSub);
             GUILayout.Label(T("safety_note"), _sSub);

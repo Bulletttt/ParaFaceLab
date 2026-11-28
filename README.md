@@ -13,11 +13,12 @@ A lightweight, in-game face & body sculpting panel for **Paralives** (tested on 
 - **Fine Facial & Body Bone Sculpting（面部与身材骨骼三轴精修）**
   - Position / Rotation / Scale across curated eyes, eyelids, 3-segment eyebrows, nose, lips, teeth, tongue, cheeks, jaw, ears, hair anchor, chest, shoulders, waist, hips, arms, thighs, calves, feet, toes, plus an All-Rig bone explorer.
   - Symmetry toggle (mirrored or asymmetric editing).
-  - Pre-frame baseline restoration + separate head/torso reference frames: preserves all vanilla facial animations and prevents drift in both Paramaker and Live Mode.
+  - Pre-frame baseline restoration + separate head/torso reference frames: preserves all vanilla facial animations and prevents drift across **Paramaker, Live Mode, Photo Mode, and Character Thumbnails**.
+  - Dedicated **Refresh Portrait** button (plus auto-refresh on panel close in Live Mode) to update character thumbnails with your sculpted bones.
 - **Vanilla+ Over-Limit Sliders（原版拉杆突破上下限）**
   - Smoothly extrapolates past `0.0 ~ 1.0` (supports `-0.5 ~ 1.5` and `-1.0 ~ 2.0`).
   - Per-character seamless **Unlock Vanilla Limits**: automatically bakes/unbakes effective slider values on toggle so your Para never jumps or deforms, and never affects untouched NPCs.
-  - Dedicated safe 0/1 switches for Male/Female chest & lower-body base modes.
+  - Dedicated safe 0/1 switches for Masculine / Feminine chest & lower-body frame modes.
 - **Smart Presets（智能预设与跨年龄换算）**
   - Apply **Full**, **Face Only**, or **Body Only** (and Bones+Vanilla / Bones Only / Vanilla Only).
   - **Cross-Age Auto-Adapt**: never overwrites the target Para's age; automatically adapts teen/adult slider ranges to preserve visual proportions.
@@ -37,7 +38,7 @@ A lightweight, in-game face & body sculpting panel for **Paralives** (tested on 
 
 ## Installation / 安装方法
 
-1. Download `ParaFaceLab_v1.2.2.zip` from [Releases](https://github.com/Bulletttt/ParaFaceLab/releases) and extract it.
+1. Download `ParaFaceLab_v1.3.0.zip` from [Releases](https://github.com/Bulletttt/ParaFaceLab/releases) and extract it.
 2. Copy `BepInEx/plugins/ParaFaceLab.dll` into `<Paralives Game Folder>/BepInEx/plugins/`.
 3. *(Optional)* Copy `Optional_OfficialModMenu/ParaFaceLab_9174628391048271645.mod` into `%USERPROFILE%\AppData\LocalLow\Paralives\Paralives\` to show ParaFaceLab as an On/Off toggle card in the official in-game Mods menu.
 4. Launch Paralives, enter Paramaker or Live Mode, and press **F9** to toggle the panel.
